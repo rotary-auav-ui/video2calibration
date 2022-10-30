@@ -15,6 +15,8 @@ if __name__ == '__main__':
     parser.add_argument('--debug-dir', help='path to directory where images with detected chessboard will be written',
                         default=None)
     parser.add_argument('-c', '--corners', help='output corners file', default=None)
+    parser.add_argument('-ph', '--pattern_height', help='pattern height', default=9, type=int)
+    parser.add_argument('-pw', '--pattern_width', help='pattern width', default=6, type=int)
     parser.add_argument('-fs', '--framestep', help='use every nth frame in the video', default=20, type=int)
     parser.add_argument('-max', '--max-frames', help='limit the number of frames used for calibration', default=None, type=int)
     # parser.add_argument('--figure', help='saved visualization name', default=None)
@@ -26,7 +28,7 @@ if __name__ == '__main__':
         source = cv2.VideoCapture(args.input)
     # square_size = float(args.get('--square_size', 1.0))
 
-    pattern_size = (9, 6)
+    pattern_size = (args.pattern_width, args.pattern_height)
     pattern_points = np.zeros((np.prod(pattern_size), 3), np.float32)
     pattern_points[:, :2] = np.indices(pattern_size).T.reshape(-1, 2)
     # pattern_points *= square_size
@@ -91,15 +93,15 @@ if __name__ == '__main__':
     print("camera matrix:\n", camera_matrix)
     print("distortion coefficients: ", dist_coefs.ravel())
 
-    # # fisheye calibration
-    # rms, camera_matrix, dist_coefs, rvecs, tvecs = cv2.fisheye.calibrate(
-    #     obj_points, img_points,
-    #     (w, h), camera_matrix, np.array([0., 0., 0., 0.]),
-    #     None, None,
-    #     cv2.fisheye.CALIB_USE_INTRINSIC_GUESS, (3, 1, 1e-6))
-    # print "RMS:", rms
-    # print "camera matrix:\n", camera_matrix
-    # print "distortion coefficients: ", dist_coefs.ravel()
+    if args.fisheye:
+        rms, camera_matrix, dist_coefs, rvecs, tvecs = cv2.fisheye.calibrate(
+            obj_points, img_points,
+            (w, h), camera_matrix, np.array([0., 0., 0., 0.]),
+            None, None,
+            cv2.fisheye.CALIB_USE_INTRINSIC_GUESS, (3, 1, 1e-6))
+        print("RMS:", rms)
+        print("camera matrix:\n", camera_matrix)
+        print("distortion coefficients: ", dist_coefs.ravel())
 
     calibration = {'rms': rms, 'camera_matrix': camera_matrix.tolist(), 'dist_coefs': dist_coefs.tolist()}
     with open(args.out, 'w') as fw:
