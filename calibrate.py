@@ -22,10 +22,14 @@ if __name__ == '__main__':
     # parser.add_argument('--figure', help='saved visualization name', default=None)
     args = parser.parse_args()
 
-    if '*' in args.input:
-        source = glob(args.input)
-    else:
+    if os.path.isdir(args.input):  # Check if input is a folder
+        # Get a sorted list of images in the folder
+        source = sorted(glob(os.path.join(args.input, "*.jpg")) + glob(os.path.join(args.input, "*.png")))
+    elif os.path.isfile(args.input):  # Check if input is a file
+        # Assume the file is a video
         source = cv2.VideoCapture(args.input)
+    else:
+        raise ValueError("The input path is neither a valid folder nor a valid video file.")
     # square_size = float(args.get('--square_size', 1.0))
 
     pattern_size = (args.pattern_width, args.pattern_height)
@@ -39,18 +43,19 @@ if __name__ == '__main__':
     frame = -1
     used_frames = 0
     while True:
-        frame += 1
         if isinstance(source, list):
-            # glob
-            if frame == len(source):
+            # Handling image list
+            if frame >= len(source):  # Stop if all images are processed
                 break
             img = cv2.imread(source[frame])
+            frame += 1
         else:
-            # cv2.VideoCapture
+            # Handling video capture
             retval, img = source.read()
-            if not retval:
+            if not retval:  # Stop if no more frames in the video
                 break
-            if frame % args.framestep != 0:
+            frame += 1
+            if frame % args.framestep != 0:  # Skip frames based on framestep
                 continue
 
         print(f'Searching for chessboard in frame {frame}... ', end='')
